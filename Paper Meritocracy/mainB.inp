@@ -1,0 +1,169 @@
+TITLE:     
+    Model with rank by 10
+    Test of Mot vs Jus for skills 
+    version  18apr2019
+           
+DATA:      
+    FILE = main1.dat;
+
+VARIABLE:  
+    NAMES =  rm1 rm2 rc1 re1 rc2 re2 
+             d1 t1 c1 f1 a1 h1 s1 d2 t2 c2 f2 a2 h2 s2 
+             age sex huk mig emo efa sib ses cog hw 
+             w phat1 stprhedu sub sub2; 
+    USEVAR = rm1 rm2 rc1 re1 rc2 re2 
+             t1 c1 h1 s1 t2 c2 h2 s2 
+             sex cog hw 
+             w; !age huk mig emo efa sib ses 
+    MISSING  = ALL(9999);
+    CATEGORICAL = h1 h2 s1 s2;
+    WEIGHT = w;
+    
+
+ANALYSIS:  
+    ESTIMATOR = WLSMV;
+    PARAMETERIZATION=THETA;
+    STITERATIONS = 200;
+    
+
+MODEL:     
+ 
+ !Latent variable for educational level 
+ !Effect coding is used for identification 
+    
+    rank1 BY rm1 rc1 re1;
+    rank2 BY rm2 rc2 re2; 
+
+ !Autoregressive paths 
+
+    rank2 ON rank1;  
+    h2    ON h1; 
+    s2    ON s1;
+    t2    ON t1;
+    c2    ON c1;
+    
+    
+
+    
+ 
+ !Reciprocal effects
+     
+    rank2 ON s1 h1 c1 t1 (a1-a4);  
+    h2    ON rank1 (h1); 
+    s2    ON rank1;
+    t2    ON rank1;
+    c2    ON rank1;
+    
+    
+    
+    
+ !Control variables
+       
+    s1    ON sex cog hw; 
+    h1    ON sex cog hw; 
+    rank1 ON sex cog hw; 
+    !t1    ON sex cog hw;
+    c1    ON sex cog hw;
+    
+ 
+  
+
+  !To reduce missing data
+  !Specifying that only sex huk mig (dummy) are exogenous variables
+
+   !age   ON sex huk mig;
+   !emo   ON sex huk mig;
+   !efa   ON sex huk mig;
+   !sib   ON sex huk mig;
+   !ses   ON sex huk mig;
+   cog    ON sex;
+   hw     ON sex;
+   !phat1 ON sex huk mig;
+
+!Residual covariances 
+
+    h1    WITH s1;
+    h1    WITH rank1;
+    h1    WITH t1;
+    h1    WITH c1;
+    !h1    WITH f1;
+    s1    WITH rank1;
+    s1    WITH t1;
+    s1    WITH c1;
+    !s1    WITH f1;
+    t1    WITH c1;
+    !t1    WITH f1;
+    t1    WITH rank1;
+    !c1    WITH f1;
+    c1    WITH rank1;
+    !f1    WITH rank1;
+
+    
+    h2    WITH s2;
+    h2    WITH rank2;
+    h2    WITH t2;
+    h2    WITH c2;
+    !h2    WITH f2;
+    s2    WITH rank2;
+    s2    WITH t2;
+    s2    WITH c2;
+    !s2    WITH f2;
+    t2    WITH c2;
+    !t2    WITH f2;
+    t2    WITH rank2;
+    !c2    WITH f2;
+    c2    WITH rank2;
+    !f2    WITH rank2;
+    
+ !residual covariance latent variable
+ 
+    re1 WITH re2;
+    rm1 WITH rm2;
+    rc1 WITH rc2;   
+ 
+ !Residual covariance control variables
+
+    !age WITH emo;
+    !age WITH efa;
+    !age WITH sib;
+    !age WITH ses;
+    !age WITH cog;
+    !age WITH phat1;
+    
+    !sex WITH huk;
+    !sex WITH mig;
+    
+    !huk WITH mig;
+   
+    !emo WITH efa;
+    !emo WITH sib; 
+    !emo WITH ses; 
+    !emo WITH cog;
+    !emo  WITH phat1;
+
+    !efa WITH sib; 
+    !efa WITH ses; 
+    !efa WITH cog;
+    !efa  WITH phat1;
+
+    !sib WITH ses; 
+    !sib WITH cog;
+    !sib  WITH phat1;
+
+    !ses WITH cog;
+    !ses  WITH phat1;
+
+    cog WITH hw;
+
+    !phat1 WITH cog;
+
+!Wald test for difference between reciprocal paths of performance-skills
+
+MODEL TEST: 0=a2-h1;
+            
+   
+OUTPUT:   
+    stand;
+    MODINDICES(4);
+    sampstat;
+    TECH4; ! mean and sd of latent variables

@@ -1,0 +1,161 @@
+TITLE:     
+    Model with rank by 10
+    Test of Mot vs Jus for skills 
+    version  18apr2019
+           
+DATA:      
+    FILE = main1.dat;
+
+  VARIABLE:
+      NAMES =  rm1 rm2 rc1 re1 rc2 re2 
+               h1 h2 s1 s2 
+               age sex huk mig emo efa sib ses cog hw sub sub2 
+               w phat1;
+      USEVAR = rm1 rm2 rc1 re1 rc2 re2 
+               h1 h2 s1 s2
+               age sex huk emo efa sib cog hw 
+               w; !sub sub2 
+      MISSING  = ALL(9999);
+      CATEGORICAL = h1 h2 s1 s2;
+      WEIGHT = w;
+
+
+  ANALYSIS:
+       
+      ESTIMATOR = WLSM;
+      PARAMETERIZATION=THETA;
+
+
+  MODEL:
+
+   !Latent variable for educational level
+   !Effect coding is used for identification
+
+      rank1 BY rm1 rc1 re1;
+      rank2 BY rm2 rc2 re2;
+      
+
+
+   !Autoregressive paths
+
+      rank2 ON rank1 (r1);
+      h2    ON h1;
+      s2    ON s1 (t1);
+      !sub2  ON sub (e1);
+
+   !Reciprocal effects
+
+      rank2 ON s1 (m1);
+      rank2 ON h1 (m2);
+              
+      h2    ON rank1 s1 (h1-h2); !sub
+      s2    ON rank1 h1 (s1-s2); !sub
+      !sub2  ON rank1 s1 h1 (p1-p3);
+               
+
+   !Control variables
+
+      s1    ON  cog sex huk efa emo age sib hw;! phat1;
+      h1    ON  cog sex huk efa emo age sib hw;! phat1;
+      rank1 ON  cog sex huk efa emo age sib hw;! phat1;
+      !sub   ON  cog sex huk efa emo age sib hw;! phat1;
+       
+
+  !To reduce missing data
+  !Specifying that only sex huk mig (dummy) are exogenous variables
+
+   age sib cog efa emo hw  ON sex huk;! huk sex;
+  
+!Residual covariances wave 1
+
+    h1  WITH s1;
+    h1  WITH rank1;
+    s1  WITH rank1;
+    !sub WITH h1;
+    !sub WITH s1;
+    !sub WITH rank1;
+
+!Residual covariances wave 2
+
+    h2  WITH s2;
+    h2  WITH rank2;
+    s2  WITH rank2;
+    !sub2 WITH h2;
+    !sub2 WITH s2;
+    !sub2 WITH rank2;
+
+!Residual covariances latent variable
+
+    rm1 WITH rm2;
+    re1 WITH re2;
+    rc1 WITH rc2;
+    
+!Residual covariances between controls
+        
+ 
+    age WITH emo;
+    age WITH efa;
+    age WITH sib;
+    !age WITH ses;
+    age WITH cog;
+    age WITH hw;
+    !age WITH phat1;
+    
+    !sex WITH huk;
+    !sex WITH mig;
+    
+    !huk WITH mig;
+   
+    emo WITH efa;
+    emo WITH sib; 
+    !stprhedu WITH ses; 
+    emo WITH cog;
+    emo WITH hw;
+   ! emo WITH phat1;
+
+    efa WITH sib; 
+    !efa WITH ses; 
+    efa WITH cog;
+    efa WITH hw;
+    !efa WITH phat1;
+
+    !sib WITH ses; 
+    sib WITH cog;
+    sib WITH hw;
+    !sib WITH phat1;
+
+    !ses WITH cog;
+    !ses WITH hw;
+    !ses WITH phat1;
+
+    cog WITH hw;
+    !cog WITH phat1;
+
+    !hw  WITH phat1;
+
+    !sex WITH ses; 
+    !sex WITH age; 
+    !sex WITH sib;
+    !sex WITH stprhedu; 
+    !sex WITH emo; 
+    !sex WITH cog; 
+    !sex WITH hw; 
+    !sex WITH phat1;
+    
+    !sub WITH rank2;
+    !sub2 WITH rank1;
+
+
+!Wald test for motivational versus justification path of skills
+
+MODEL TEST: 0=h1-m2;
+
+!SAVEDATA: DIFFTEST IS nocons.dat; 
+        
+OUTPUT:   
+    stand;
+    MODINDICES(4);
+    sampstat;
+    TECH4; ! mean and sd of latent variables
+    TECH10;
+
